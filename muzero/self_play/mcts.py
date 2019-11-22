@@ -6,8 +6,7 @@ import numpy
 
 from muzero.helpers.config import MuZeroConfig
 from muzero.pseudocode import softmax_sample
-from muzero.game.game import ActionHistory, Player
-from muzero.game.environment import Action
+from muzero.game.game import ActionHistory, Player, Action
 from muzero.networks.network import NetworkOutput, Network
 
 MAXIMUM_FLOAT_VALUE = float('inf')

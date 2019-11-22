@@ -1,7 +1,22 @@
+from abc import abstractmethod, ABC
 from typing import List
 
-from muzero.game.environment import Environment, Action
 from muzero.self_play.mcts import Node
+
+
+class Action(object):
+
+    def __init__(self, index: int):
+        self.index = index
+
+    def __hash__(self):
+        return self.index
+
+    def __eq__(self, other):
+        return self.index == other.index
+
+    def __gt__(self, other):
+        return self.index > other.index
 
 
 class Player(object):
@@ -35,28 +50,18 @@ class ActionHistory(object):
         return Player()
 
 
-class Game(object):
+class Game(ABC):
     """A single episode of interaction with the environment."""
 
-    def __init__(self, action_space_size: int, discount: float):
-        self.environment = Environment()  # Game specific environment.
+    def __init__(self, discount: float):
         self.history = []
         self.rewards = []
         self.child_visits = []
         self.root_values = []
-        self.action_space_size = action_space_size
         self.discount = discount
 
-    def terminal(self) -> bool:
-        # Game specific termination rules.
-        return self.environment.terminal()
-
-    def legal_actions(self) -> List[Action]:
-        # Game specific calculation of legal actions.
-        return self.environment.legal_actions()
-
     def apply(self, action: Action):
-        reward = self.environment.step(action)
+        reward = self.step(action)
         self.rewards.append(reward)
         self.history.append(action)
 
@@ -68,10 +73,6 @@ class Game(object):
             for a in action_space
         ])
         self.root_values.append(root.value())
-
-    def make_image(self, state_index: int):
-        # Game specific feature planes.
-        return self.environment.make_image(state_index)
 
     def make_target(self, state_index: int, num_unroll_steps: int, td_steps: int,
                     to_play: Player):
@@ -101,3 +102,27 @@ class Game(object):
 
     def action_history(self) -> ActionHistory:
         return ActionHistory(self.history, self.action_space_size)
+
+    @property
+    @abstractmethod
+    def action_space_size(self) -> int:
+        pass
+
+    @abstractmethod
+    def step(self, action) -> int:
+        pass
+
+    @abstractmethod
+    def terminal(self) -> bool:
+        # Game specific termination rules.
+        pass
+
+    @abstractmethod
+    def legal_actions(self) -> List[Action]:
+        # Game specific calculation of legal actions.
+        pass
+
+    @abstractmethod
+    def make_image(self, state_index: int):
+        # Game specific feature planes.
+        pass

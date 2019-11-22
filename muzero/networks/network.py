@@ -1,7 +1,7 @@
 import typing
 from typing import Dict, List
 
-from muzero.game.environment import Action
+from muzero.game.game import Action
 
 
 class NetworkOutput(typing.NamedTuple):

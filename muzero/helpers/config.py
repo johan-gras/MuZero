@@ -1,5 +1,6 @@
 from typing import Optional
 
+from muzero.game.cartpole import CartPole
 from muzero.self_play.mcts import KnownBounds
 from muzero.game.game import Game
 
@@ -19,6 +20,9 @@ class MuZeroConfig(object):
                  lr_decay_steps: float,
                  visit_softmax_temperature_fn,
                  known_bounds: Optional[KnownBounds] = None):
+        # Environment
+        self.game = CartPole
+
         ### Self-Play
         self.action_space_size = action_space_size
         self.num_actors = num_actors
@@ -58,8 +62,8 @@ class MuZeroConfig(object):
         self.lr_decay_rate = 0.1
         self.lr_decay_steps = lr_decay_steps
 
-    def new_game(self):
-        return Game(self.action_space_size, self.discount)
+    def new_game(self) -> Game:
+        return self.game(self.discount)
 
 
 def make_board_game_config(action_space_size: int, max_moves: int,
