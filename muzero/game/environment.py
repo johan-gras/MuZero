@@ -20,17 +20,21 @@ class Action(object):
 class Environment(ABC):
     """The environment MuZero is interacting with."""
 
-    def step(self, action):
+    @abstractmethod
+    def step(self, action) -> int:
         pass
 
+    @abstractmethod
     def terminal(self) -> bool:
         # Game specific termination rules.
         pass
 
+    @abstractmethod
     def legal_actions(self) -> List[Action]:
         # Game specific calculation of legal actions.
         pass
 
+    @abstractmethod
     def make_image(self, state_index: int):
         # Game specific feature planes.
         pass
