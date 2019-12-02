@@ -1,57 +1,16 @@
-import collections
 import math
-from typing import Optional, List
+import random
+from typing import List
 
 import numpy
 
-from muzero.helpers.config import MuZeroConfig
-from muzero.pseudocode import softmax_sample
-from muzero.game.game import ActionHistory, Player, Action
-from muzero.networks.network import NetworkOutput, Network
-
-MAXIMUM_FLOAT_VALUE = float('inf')
-KnownBounds = collections.namedtuple('KnownBounds', ['min', 'max'])
+from helpers.config import MuZeroConfig
+from game.game import ActionHistory, Player, Action
+from networks.network import NetworkOutput, AbstractNetwork
+from self_play.utils import MinMaxStats, Node
 
 
-class MinMaxStats(object):
-    """A class that holds the min-max values of the tree."""
-
-    def __init__(self, known_bounds: Optional[KnownBounds]):
-        self.maximum = known_bounds.max if known_bounds else -MAXIMUM_FLOAT_VALUE
-        self.minimum = known_bounds.min if known_bounds else MAXIMUM_FLOAT_VALUE
-
-    def update(self, value: float):
-        self.maximum = max(self.maximum, value)
-        self.minimum = min(self.minimum, value)
-
-    def normalize(self, value: float) -> float:
-        if self.maximum > self.minimum:
-            # We normalize only when we have set the maximum and minimum values.
-            return (value - self.minimum) / (self.maximum - self.minimum)
-        return value
-
-
-class Node(object):
-
-    def __init__(self, prior: float):
-        self.visit_count = 0
-        self.to_play = -1
-        self.prior = prior
-        self.value_sum = 0
-        self.children = {}
-        self.hidden_state = None
-        self.reward = 0
-
-    def expanded(self) -> bool:
-        return len(self.children) > 0
-
-    def value(self) -> float:
-        if self.visit_count == 0:
-            return 0
-        return self.value_sum / self.visit_count
-
-
-def run_mcts(config: MuZeroConfig, root: Node, action_history: ActionHistory, network: Network):
+def run_mcts(config: MuZeroConfig, root: Node, action_history: ActionHistory, network: AbstractNetwork):
     """
     Core Monte Carlo Tree Search algorithm.
     To decide on an action, we run N simulations, always starting at the root of
@@ -81,20 +40,34 @@ def run_mcts(config: MuZeroConfig, root: Node, action_history: ActionHistory, ne
                       config.discount, min_max_stats)
 
 
-def select_action(config: MuZeroConfig, num_moves: int, node: Node, network: Network):
-    visit_counts = [
-        (child.visit_count, action) for action, child in node.children.items()
-    ]
-    t = config.visit_softmax_temperature_fn(
-        num_moves=num_moves, training_steps=network.training_steps())
-    _, action = softmax_sample(visit_counts, t)
+def select_action(config: MuZeroConfig, num_moves: int, node: Node, network: AbstractNetwork, mode: str = 'softmax'):
+    visit_counts = [child.visit_count for child in node.children.values()]
+    actions = [action for action in node.children.keys()]
+    if mode == 'softmax':
+        t = config.visit_softmax_temperature_fn(
+            num_moves=num_moves, training_steps=network.training_steps)
+        action = softmax_sample(visit_counts, actions, t)
+    else:  # mode == 'max'
+        # Pair count may be meh
+        action, _ = max(node.children.items(), key=lambda item: item[1].visit_count)
     return action
+
+
+def softmax_sample(visit_counts, actions, t):
+    counts_exp = numpy.exp(visit_counts) * (1 / t)
+    probs = counts_exp / numpy.sum(counts_exp, axis=0)
+    action_idx = numpy.random.choice(len(actions), p=probs)
+    return actions[action_idx]
 
 
 def select_child(config: MuZeroConfig, node: Node, min_max_stats: MinMaxStats):
     """
     Select the child with the highest UCB score.
     """
+    # ERROR: when the parent visit count is zero, all ucb scores are zeros, therefore we return a random child
+    if node.visit_count == 0:
+        return random.sample(node.children.items(), 1)[0]
+
     _, action, child = max(
         (ucb_score(config, node, child, min_max_stats), action,
          child) for action, child in node.children.items())
@@ -137,7 +110,8 @@ def backpropagate(search_path: List[Node], value: float, to_play: Player,
     At the end of a simulation, we propagate the evaluation all the way up the
     tree to the root.
     """
-    for node in search_path:
+    # ERROR: the search path need to be reversed
+    for node in search_path[::-1]:
         node.value_sum += value if node.to_play == to_play else -value
         node.visit_count += 1
         min_max_stats.update(node.value())

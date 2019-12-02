@@ -1,8 +1,10 @@
+import collections
 from typing import Optional
 
-from muzero.game.cartpole import CartPole
-from muzero.self_play.mcts import KnownBounds
-from muzero.game.game import Game
+from game.cartpole import CartPole
+from game.game import AbstractGame
+
+KnownBounds = collections.namedtuple('KnownBounds', ['min', 'max'])
 
 
 class MuZeroConfig(object):
@@ -48,7 +50,7 @@ class MuZeroConfig(object):
 
         ### Training
         self.training_steps = int(1000e3)
-        self.checkpoint_interval = int(1e3)
+        self.checkpoint_interval = 1 # int(1e3)
         self.window_size = int(1e6)
         self.batch_size = batch_size
         self.num_unroll_steps = 5
@@ -62,7 +64,7 @@ class MuZeroConfig(object):
         self.lr_decay_rate = 0.1
         self.lr_decay_steps = lr_decay_steps
 
-    def new_game(self) -> Game:
+    def new_game(self) -> AbstractGame:
         return self.game(self.discount)
 
 
@@ -124,5 +126,28 @@ def make_atari_config() -> MuZeroConfig:
         td_steps=10,
         num_actors=350,
         lr_init=0.05,
+        lr_decay_steps=350e3,
+        visit_softmax_temperature_fn=visit_softmax_temperature)
+
+
+def make_cartpole_config() -> MuZeroConfig:
+    def visit_softmax_temperature(num_moves, training_steps):
+        if training_steps < 500*10:
+            return 1.0
+        elif training_steps < 1000:
+            return 0.5
+        else:
+            return 0.25
+
+    return MuZeroConfig(
+        action_space_size=2,
+        max_moves=1000,
+        discount=0.99,
+        dirichlet_alpha=0.25,
+        num_simulations=10,
+        batch_size=512,
+        td_steps=10,
+        num_actors=350,
+        lr_init=0.01,
         lr_decay_steps=350e3,
         visit_softmax_temperature_fn=visit_softmax_temperature)

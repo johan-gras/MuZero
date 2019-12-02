@@ -1,7 +1,7 @@
 from abc import abstractmethod, ABC
 from typing import List
 
-from muzero.self_play.mcts import Node
+from self_play.utils import Node
 
 
 class Action(object):
@@ -21,7 +21,8 @@ class Action(object):
 
 class Player(object):
     """One player only"""
-    pass
+    def __eq__(self, other):
+        return True
 
 
 class ActionHistory(object):
@@ -50,7 +51,7 @@ class ActionHistory(object):
         return Player()
 
 
-class Game(ABC):
+class AbstractGame(ABC):
     """A single episode of interaction with the environment."""
 
     def __init__(self, discount: float):
@@ -90,8 +91,7 @@ class Game(ABC):
                 value += reward * self.discount ** i
 
             if current_index < len(self.root_values):
-                targets.append((value, self.rewards[current_index],
-                                self.child_visits[current_index]))
+                targets.append((value, self.rewards[current_index], self.child_visits[current_index]))
             else:
                 # States past the end of games are treated as absorbing states.
                 targets.append((0, 0, []))

@@ -6,12 +6,11 @@
 
 from __future__ import absolute_import
 from __future__ import division
-from __future__ import google_type_annotations
+# from __future__ import google_type_annotations
 from __future__ import print_function
 
 ##########################
 ####### Helpers ##########
-from muzero.networks.network import Network
 
 
 ################################################################################
@@ -20,13 +19,13 @@ from muzero.networks.network import Network
 
 
 # Stubs to make the typechecker happy.
-def softmax_sample(distribution, temperature: float):
-    return 0, 0
+# def softmax_sample(distribution, temperature: float):
+#     return 0, 0
 
 
 def launch_job(f, *args):
     f(*args)
 
 
-def make_uniform_network():
-    return Network()
+# def make_uniform_network():
+#     return None#Network()

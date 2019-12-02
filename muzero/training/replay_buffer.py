@@ -1,5 +1,7 @@
-from muzero.game.game import Game
-from muzero.helpers.config import MuZeroConfig
+import random
+
+from game.game import AbstractGame
+from helpers.config import MuZeroConfig
 
 
 class ReplayBuffer(object):
@@ -21,12 +23,14 @@ class ReplayBuffer(object):
                  g.make_target(i, num_unroll_steps, td_steps, g.to_play()))
                 for (g, i) in game_pos]
 
-    def sample_game(self) -> Game:
+    def sample_game(self) -> AbstractGame:
         # TODO
         # Sample game from buffer either uniformly or according to some priority.
-        return self.buffer[0]
+        # return self.buffer[0]
+        return random.sample(self.buffer, 1).pop()
 
-    def sample_position(self, game) -> int:
+    def sample_position(self, game: AbstractGame) -> int:
         # TODO
         # Sample position from game either uniformly or according to some priority.
-        return -1
+        #return -1
+        return random.randint(0, len(game.history))
