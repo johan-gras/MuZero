@@ -1,3 +1,7 @@
+"""Helpers for the MCTS"""
+
+import numpy as np
+
 MAXIMUM_FLOAT_VALUE = float('inf')
 
 
@@ -25,6 +29,7 @@ class MinMaxStats(object):
 
 
 class Node(object):
+    """A class that represent nodes inside the MCTS tree"""
 
     def __init__(self, prior: float):
         self.visit_count = 0
@@ -42,3 +47,10 @@ class Node(object):
         if self.visit_count == 0:
             return 0
         return self.value_sum / self.visit_count
+
+
+def softmax_sample(visit_counts, actions, t):
+    counts_exp = np.exp(visit_counts) * (1 / t)
+    probs = counts_exp / np.sum(counts_exp, axis=0)
+    action_idx = np.random.choice(len(actions), p=probs)
+    return actions[action_idx]

@@ -1,8 +1,12 @@
 import collections
 from typing import Optional
 
+import tensorflow_core as tf
+
 from game.cartpole import CartPole
 from game.game import AbstractGame
+from networks.cartpole_network import CartPoleNetwork
+from networks.network import BaseNetwork, UniformNetwork
 
 KnownBounds = collections.namedtuple('KnownBounds', ['min', 'max'])
 
@@ -24,6 +28,11 @@ class MuZeroConfig(object):
                  known_bounds: Optional[KnownBounds] = None):
         # Environment
         self.game = CartPole
+        self.network_args = {'action_size': 2,
+                             'state_size': 4,
+                             'representation_size': 4,
+                             'max_value': 500}
+        self.network = CartPoleNetwork
 
         ### Self-Play
         self.action_space_size = action_space_size
@@ -66,6 +75,16 @@ class MuZeroConfig(object):
 
     def new_game(self) -> AbstractGame:
         return self.game(self.discount)
+
+    def new_network(self) -> BaseNetwork:
+        return self.network(**self.network_args)
+
+    def uniform_network(self) -> UniformNetwork:
+        return UniformNetwork(self.action_space_size)
+
+    def new_optimizer(self) -> tf.keras.optimizers:
+        # tf.keras.optimizers.RMSprop(learning_rate=0.025) # 0.05
+        return tf.keras.optimizers.SGD(learning_rate=0.05, momentum=self.momentum)
 
 
 def make_board_game_config(action_space_size: int, max_moves: int,

@@ -1,6 +1,6 @@
-"""Training module"""
+"""Training module: this is where MuZero neurons are trained."""
+
 import math
-import random
 from itertools import zip_longest
 
 import numpy as np
@@ -8,26 +8,29 @@ import tensorflow_core as tf
 
 from helpers.config import MuZeroConfig
 from networks.cartpole_network import CartPoleNetwork
-from networks.network import AbstractNetwork
+from networks.network import BaseNetwork
 from networks.shared_storage import SharedStorage
 from training.replay_buffer import ReplayBuffer
 
 
-def train_network(config: MuZeroConfig, storage: SharedStorage, replay_buffer: ReplayBuffer):
-    if not storage.current_network:
-        storage.current_network = CartPoleNetwork()
-        # storage.current_optimizer = tf.keras.optimizers.RMSprop(learning_rate=0.025) # 0.05
-        storage.current_optimizer = tf.keras.optimizers.SGD(learning_rate=0.05, momentum=config.momentum)
+def train_network(config: MuZeroConfig, storage: SharedStorage, replay_buffer: ReplayBuffer, epochs: int):
+    # if not storage.current_network:
+    #     # learning_rate = config.lr_init * config.lr_decay_rate ** (tf.train.get_global_step() / config.lr_decay_steps)
+    #     storage.current_network = CartPoleNetwork()
+    #     # storage.current_optimizer = tf.keras.optimizers.RMSprop(learning_rate=0.025) # 0.05
+    #     storage.current_optimizer = tf.keras.optimizers.SGD(learning_rate=0.05, momentum=config.momentum)
     network = storage.current_network
-    optimizer = storage.current_optimizer
+    optimizer = storage.optimizer
 
-    if network.training_steps % config.checkpoint_interval == 0:
+    for _ in range(epochs):
+        batch = replay_buffer.sample_batch(config.num_unroll_steps, config.td_steps)
+        update_weights_batch(optimizer, network, batch, config.weight_decay)
         storage.save_network(network.training_steps, network)
-    batch = replay_buffer.sample_batch(config.num_unroll_steps, config.td_steps)
-    update_weights_batch(optimizer, network, batch, config.weight_decay)
 
 
-def update_weights_batch(optimizer: tf.keras.optimizers, network: AbstractNetwork, batch, weight_decay: float):
+def update_weights_batch(optimizer: tf.keras.optimizers, network: BaseNetwork, batch, weight_decay: float):
+    # TODO: Scale properly the gradient in the batch
+
     def scale_gradient(tensor, scale: float):
         """Trick function to scale the gradient in tensorflow"""
         return (1. - scale) * tf.stop_gradient(tensor) + scale * tensor
@@ -78,9 +81,9 @@ def update_weights_batch(optimizer: tf.keras.optimizers, network: AbstractNetwor
             target_policy_batch = tf.convert_to_tensor([policy for policy in target_policy_batch if policy])
 
             # Concatenate representations with actions batch
-            actions_batch = tf.one_hot(actions_batch, network.ACTION_SIZE)
+            actions_batch = tf.one_hot(actions_batch, network.action_size)
             conditioned_representation_batch = tf.concat((representation_batch, actions_batch), axis=1)
-            representation_batch, reward_batch, value_batch, policy_batch = network.dynamic_model(conditioned_representation_batch)
+            representation_batch, reward_batch, value_batch, policy_batch = network.recurrent_model(conditioned_representation_batch)
             policy_batch = tf.boolean_mask(policy_batch, mask_policy)
 
             # Compute the partial loss
@@ -100,6 +103,8 @@ def update_weights_batch(optimizer: tf.keras.optimizers, network: AbstractNetwor
 
 
 def loss_value_batch(target_value_batch, value_batch):
+    # TODO: make this less cartpole specific.
+
     batch_size = len(target_value_batch)
     targets = np.zeros((batch_size, 24))
     sqrt_value = np.sqrt(target_value_batch)
@@ -111,7 +116,9 @@ def loss_value_batch(target_value_batch, value_batch):
     return tf.nn.softmax_cross_entropy_with_logits(logits=value_batch, labels=targets)
 
 
-def update_weights(optimizer: tf.keras.optimizers, network: AbstractNetwork, batch, weight_decay: float):
+# Depracated
+
+def update_weights(optimizer: tf.keras.optimizers, network: BaseNetwork, batch, weight_decay: float):
     def scale_gradient(tensor, scale: float):
         """Trick function to scale the gradient in tensorflow"""
         return (1. - scale) * tf.stop_gradient(tensor) + scale * tensor
@@ -129,7 +136,7 @@ def update_weights(optimizer: tf.keras.optimizers, network: AbstractNetwork, bat
             for action in actions:
                 encoded_action = tf.expand_dims(tf.one_hot(action.index, network.ACTION_SIZE), axis=0)
                 conditioned_hidden = tf.concat((hidden_representation, encoded_action), axis=1)
-                hidden_representation, reward, value, policy_logits = network.dynamic_model(conditioned_hidden)
+                hidden_representation, reward, value, policy_logits = network.recurrent_model(conditioned_hidden)
                 predictions.append((1.0 / len(actions), value, reward, policy_logits))
 
                 # Half the gradient
@@ -161,54 +168,3 @@ def loss_value(target_value, logits_value):
     target[floor+1] = rest
 
     return tf.nn.softmax_cross_entropy_with_logits(logits=logits_value, labels=tf.convert_to_tensor([target]))
-
-
-def update_weights_old(optimizer, network: AbstractNetwork, batch, weight_decay: float):
-    loss = 0
-    for image, actions, targets in batch:
-        # Initial step, from the real observation.
-        value, reward, policy_logits, hidden_state = network.initial_inference(image)
-        predictions = [(1.0, value, reward, policy_logits)]
-
-        # Recurrent steps, from action and previous hidden state.
-        for action in actions:
-            value, reward, policy_logits, hidden_state = network.recurrent_inference(hidden_state, action)
-            predictions.append((1.0 / len(actions), value, reward, policy_logits))
-
-            hidden_state = tf.scale_gradient(hidden_state, 0.5)
-
-        for prediction, target in zip(predictions, targets):
-            gradient_scale, value, reward, policy_logits = prediction
-            target_value, target_reward, target_policy = target
-
-            l = (
-                    scalar_loss(value, target_value) +
-                    scalar_loss(reward, target_reward) +
-                    tf.nn.softmax_cross_entropy_with_logits(logits=policy_logits, labels=target_policy))
-
-            loss += tf.scale_gradient(l, gradient_scale)
-            # TODO: fix scale gradient
-
-    for weights in network.get_weights():
-        loss += weight_decay * tf.nn.l2_loss(weights)
-
-    optimizer.minimize(loss)
-
-
-def scalar_loss(prediction, target) -> float:
-    # MSE in board games, cross entropy between categorical values in Atari.
-    # TODO: MSE for starter
-    return -1
-
-
-def train_network_workers(config: MuZeroConfig, storage: SharedStorage, replay_buffer: ReplayBuffer):
-    network = storage.latest_network()
-    learning_rate = config.lr_init * config.lr_decay_rate ** (tf.train.get_global_step() / config.lr_decay_steps)
-    optimizer = tf.train.MomentumOptimizer(learning_rate, config.momentum)
-
-    for i in range(config.training_steps):
-        if i % config.checkpoint_interval == 0:
-            storage.save_network(i, network)
-        batch = replay_buffer.sample_batch(config.num_unroll_steps, config.td_steps)
-        update_weights(optimizer, network, batch, config.weight_decay)
-    storage.save_network(config.training_steps, network)

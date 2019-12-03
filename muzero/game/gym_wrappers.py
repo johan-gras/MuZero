@@ -2,8 +2,9 @@ import gym
 import numpy as np
 
 
-class NormalizedObservationWrapper(gym.ObservationWrapper):
-    """This wrapper converts a Box observation into
+class ScalingObservationWrapper(gym.ObservationWrapper):
+    """
+    Wrapper that apply a min-max scaling of observations.
     """
 
     def __init__(self, env, low=None, high=None):

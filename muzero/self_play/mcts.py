@@ -1,3 +1,5 @@
+"""MCTS module: where MuZero thinks inside the tree."""
+
 import math
 import random
 from typing import List
@@ -5,12 +7,24 @@ from typing import List
 import numpy
 
 from helpers.config import MuZeroConfig
-from game.game import ActionHistory, Player, Action
-from networks.network import NetworkOutput, AbstractNetwork
-from self_play.utils import MinMaxStats, Node
+from game.game import Player, Action, ActionHistory
+from networks.network import NetworkOutput, BaseNetwork
+from self_play.utils import MinMaxStats, Node, softmax_sample
 
 
-def run_mcts(config: MuZeroConfig, root: Node, action_history: ActionHistory, network: AbstractNetwork):
+def add_exploration_noise(config: MuZeroConfig, node: Node):
+    """
+    At the start of each search, we add dirichlet noise to the prior of the root
+    to encourage the search to explore new actions.
+    """
+    actions = list(node.children.keys())
+    noise = numpy.random.dirichlet([config.root_dirichlet_alpha] * len(actions))
+    frac = config.root_exploration_fraction
+    for a, n in zip(actions, noise):
+        node.children[a].prior = node.children[a].prior * (1 - frac) + n * frac
+
+
+def run_mcts(config: MuZeroConfig, root: Node, action_history: ActionHistory, network: BaseNetwork):
     """
     Core Monte Carlo Tree Search algorithm.
     To decide on an action, we run N simulations, always starting at the root of
@@ -32,32 +46,10 @@ def run_mcts(config: MuZeroConfig, root: Node, action_history: ActionHistory, ne
         # Inside the search tree we use the dynamics function to obtain the next
         # hidden state given an action and the previous hidden state.
         parent = search_path[-2]
-        network_output = network.recurrent_inference(parent.hidden_state,
-                                                     history.last_action())
+        network_output = network.recurrent_inference(parent.hidden_state, history.last_action())
         expand_node(node, history.to_play(), history.action_space(), network_output)
 
-        backpropagate(search_path, network_output.value, history.to_play(),
-                      config.discount, min_max_stats)
-
-
-def select_action(config: MuZeroConfig, num_moves: int, node: Node, network: AbstractNetwork, mode: str = 'softmax'):
-    visit_counts = [child.visit_count for child in node.children.values()]
-    actions = [action for action in node.children.keys()]
-    if mode == 'softmax':
-        t = config.visit_softmax_temperature_fn(
-            num_moves=num_moves, training_steps=network.training_steps)
-        action = softmax_sample(visit_counts, actions, t)
-    else:  # mode == 'max'
-        # Pair count may be meh
-        action, _ = max(node.children.items(), key=lambda item: item[1].visit_count)
-    return action
-
-
-def softmax_sample(visit_counts, actions, t):
-    counts_exp = numpy.exp(visit_counts) * (1 / t)
-    probs = counts_exp / numpy.sum(counts_exp, axis=0)
-    action_idx = numpy.random.choice(len(actions), p=probs)
-    return actions[action_idx]
+        backpropagate(search_path, network_output.value, history.to_play(), config.discount, min_max_stats)
 
 
 def select_child(config: MuZeroConfig, node: Node, min_max_stats: MinMaxStats):
@@ -119,13 +111,19 @@ def backpropagate(search_path: List[Node], value: float, to_play: Player,
         value = node.reward + discount * value
 
 
-def add_exploration_noise(config: MuZeroConfig, node: Node):
+def select_action(config: MuZeroConfig, num_moves: int, node: Node, network: BaseNetwork, mode: str = 'softmax'):
     """
-    At the start of each search, we add dirichlet noise to the prior of the root
-    to encourage the search to explore new actions.
+    After running simulations inside in MCTS, we select an action based on the root's children visit counts.
+    During training we use a softmax sample for exploration.
+    During evaluation we select the most visited child.
     """
-    actions = list(node.children.keys())
-    noise = numpy.random.dirichlet([config.root_dirichlet_alpha] * len(actions))
-    frac = config.root_exploration_fraction
-    for a, n in zip(actions, noise):
-        node.children[a].prior = node.children[a].prior * (1 - frac) + n * frac
+    visit_counts = [child.visit_count for child in node.children.values()]
+    actions = [action for action in node.children.keys()]
+    action = None
+    if mode == 'softmax':
+        t = config.visit_softmax_temperature_fn(
+            num_moves=num_moves, training_steps=network.training_steps)
+        action = softmax_sample(visit_counts, actions, t)
+    elif mode == 'max':
+        action, _ = max(node.children.items(), key=lambda item: item[1].visit_count)
+    return action
