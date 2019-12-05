@@ -1,5 +1,5 @@
 import collections
-from typing import Optional
+from typing import Optional, Dict
 
 import tensorflow_core as tf
 
@@ -14,6 +14,12 @@ KnownBounds = collections.namedtuple('KnownBounds', ['min', 'max'])
 class MuZeroConfig(object):
 
     def __init__(self,
+                 game,
+                 nb_training_loop: int,
+                 nb_episodes: int,
+                 nb_epochs: int,
+                 network_args: Dict,
+                 network,
                  action_space_size: int,
                  max_moves: int,
                  discount: float,
@@ -21,22 +27,15 @@ class MuZeroConfig(object):
                  num_simulations: int,
                  batch_size: int,
                  td_steps: int,
-                 num_actors: int,
-                 lr_init: float,
-                 lr_decay_steps: float,
                  visit_softmax_temperature_fn,
+                 lr: float,
                  known_bounds: Optional[KnownBounds] = None):
-        # Environment
-        self.game = CartPole
-        self.network_args = {'action_size': 2,
-                             'state_size': 4,
-                             'representation_size': 4,
-                             'max_value': 500}
-        self.network = CartPoleNetwork
+        ### Environment
+        self.game = game
 
         ### Self-Play
         self.action_space_size = action_space_size
-        self.num_actors = num_actors
+        # self.num_actors = num_actors
 
         self.visit_softmax_temperature_fn = visit_softmax_temperature_fn
         self.max_moves = max_moves
@@ -58,8 +57,12 @@ class MuZeroConfig(object):
         self.known_bounds = known_bounds
 
         ### Training
-        self.training_steps = int(1000e3)
-        self.checkpoint_interval = 1 # int(1e3)
+        self.nb_training_loop = nb_training_loop
+        self.nb_episodes = nb_episodes  # Nb of episodes per training loop
+        self.nb_epochs = nb_epochs  # Nb of epochs per training loop
+
+        # self.training_steps = int(1000e3)
+        # self.checkpoint_interval = int(1e3)
         self.window_size = int(1e6)
         self.batch_size = batch_size
         self.num_unroll_steps = 5
@@ -68,10 +71,13 @@ class MuZeroConfig(object):
         self.weight_decay = 1e-4
         self.momentum = 0.9
 
+        self.network_args = network_args
+        self.network = network
+        self.lr = lr
         # Exponential learning rate schedule
-        self.lr_init = lr_init
-        self.lr_decay_rate = 0.1
-        self.lr_decay_steps = lr_decay_steps
+        # self.lr_init = lr_init
+        # self.lr_decay_rate = 0.1
+        # self.lr_decay_steps = lr_decay_steps
 
     def new_game(self) -> AbstractGame:
         return self.game(self.discount)
@@ -83,9 +89,36 @@ class MuZeroConfig(object):
         return UniformNetwork(self.action_space_size)
 
     def new_optimizer(self) -> tf.keras.optimizers:
-        # tf.keras.optimizers.RMSprop(learning_rate=0.025) # 0.05
-        return tf.keras.optimizers.SGD(learning_rate=0.05, momentum=self.momentum)
+        return tf.keras.optimizers.SGD(learning_rate=self.lr, momentum=self.momentum)
 
+
+def make_cartpole_config() -> MuZeroConfig:
+    def visit_softmax_temperature(num_moves, training_steps):
+        return 1.0
+
+    return MuZeroConfig(
+        game=CartPole,
+        nb_training_loop=50,
+        nb_episodes=20,
+        nb_epochs=20,
+        network_args={'action_size': 2,
+                      'state_size': 4,
+                      'representation_size': 4,
+                      'max_value': 500},
+        network=CartPoleNetwork,
+        action_space_size=2,
+        max_moves=1000,
+        discount=0.99,
+        dirichlet_alpha=0.25,
+        num_simulations=10,
+        batch_size=512,
+        td_steps=10,
+        visit_softmax_temperature_fn=visit_softmax_temperature,
+        lr=0.05)
+
+
+"""
+Legacy configs from the DeepMind's pseudocode.
 
 def make_board_game_config(action_space_size: int, max_moves: int,
                            dirichlet_alpha: float,
@@ -147,26 +180,4 @@ def make_atari_config() -> MuZeroConfig:
         lr_init=0.05,
         lr_decay_steps=350e3,
         visit_softmax_temperature_fn=visit_softmax_temperature)
-
-
-def make_cartpole_config() -> MuZeroConfig:
-    def visit_softmax_temperature(num_moves, training_steps):
-        if training_steps < 500*10:
-            return 1.0
-        elif training_steps < 1000:
-            return 0.5
-        else:
-            return 0.25
-
-    return MuZeroConfig(
-        action_space_size=2,
-        max_moves=1000,
-        discount=0.99,
-        dirichlet_alpha=0.25,
-        num_simulations=10,
-        batch_size=512,
-        td_steps=10,
-        num_actors=350,
-        lr_init=0.01,
-        lr_decay_steps=350e3,
-        visit_softmax_temperature_fn=visit_softmax_temperature)
+"""

@@ -1,4 +1,5 @@
 """Helpers for the MCTS"""
+from typing import Optional
 
 import numpy as np
 
@@ -13,14 +14,16 @@ class MinMaxStats(object):
         self.minimum = known_bounds.min if known_bounds else MAXIMUM_FLOAT_VALUE
 
     def update(self, value: float):
+        if value is None:
+            raise ValueError
+
         self.maximum = max(self.maximum, value)
         self.minimum = min(self.minimum, value)
 
     def normalize(self, value: float) -> float:
-        # ERROR: new values are initialized to zero, therefore the normalization could not works
-        # Bellow, this works only if values are positive:
-        if value == 0:
-            return value
+        # If the value is unknow, by default we set it to the minimum possible value
+        if value is None:
+            return 0.0
 
         if self.maximum > self.minimum:
             # We normalize only when we have set the maximum and minimum values.
@@ -43,9 +46,9 @@ class Node(object):
     def expanded(self) -> bool:
         return len(self.children) > 0
 
-    def value(self) -> float:
+    def value(self) -> Optional[float]:
         if self.visit_count == 0:
-            return 0
+            return None
         return self.value_sum / self.visit_count
 
 

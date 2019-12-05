@@ -25,6 +25,7 @@ class Player(object):
     A one player class.
     This class is useless, it's here for legacy purpose and for potential adaptations for a two players MuZero.
     """
+
     def __eq__(self, other):
         return True
 
@@ -111,12 +112,10 @@ class AbstractGame(ABC):
 
     def to_play(self) -> Player:
         """Return the current player."""
-
         return Player()
 
     def action_history(self) -> ActionHistory:
         """Return the actions executed inside the search."""
-
         return ActionHistory(self.history, self.action_space_size)
 
     # Methods to be implemented by the children class

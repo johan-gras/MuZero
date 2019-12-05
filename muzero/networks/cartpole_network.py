@@ -6,7 +6,7 @@ from tensorflow_core.python.keras.layers.core import Dense
 from tensorflow_core.python.keras.models import Sequential
 
 from game.game import Action
-from networks.network import BaseNetwork, NetworkOutput, InitialModel, RecurrentModel
+from networks.network import BaseNetwork
 
 
 class CartPoleNetwork(BaseNetwork):

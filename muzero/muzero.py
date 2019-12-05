@@ -1,9 +1,8 @@
-from helpers.config import MuZeroConfig, make_cartpole_config
-from networks.network import UniformNetwork
+from config import MuZeroConfig, make_cartpole_config
 from networks.shared_storage import SharedStorage
-from self_play.self_play import run_selfplay, run_eval
-from training.training import train_network
+from self_play.self_play import run_selfplay
 from training.replay_buffer import ReplayBuffer
+from training.training import train_network
 
 
 def muzero(config: MuZeroConfig):
@@ -19,19 +18,14 @@ def muzero(config: MuZeroConfig):
     storage = SharedStorage(config.new_network(), config.uniform_network(), config.new_optimizer())
     replay_buffer = ReplayBuffer(config)
 
-    train_episodes = 50
-    eval_episodes = 0
-    epochs = 50
-
-    for loop in range(100):
+    for loop in range(config.nb_training_loop):
         print("Training loop", loop)
-        score_eval = run_eval(config, storage, eval_episodes)
-        score_train = run_selfplay(config, storage, replay_buffer, train_episodes)
-        train_network(config, storage, replay_buffer, epochs)
+        score_train = run_selfplay(config, storage, replay_buffer, config.nb_episodes)
+        train_network(config, storage, replay_buffer, config.nb_epochs)
 
-        print("Eval score:", score_eval)
         print("Train score:", score_train)
-        print(f"MuZero played {train_episodes * (loop + 1)} episodes and trained for {epochs * (loop + 1)} epochs.\n")
+        print(f"MuZero played {config.nb_episodes * (loop + 1)} "
+              f"episodes and trained for {config.nb_epochs * (loop + 1)} epochs.\n")
 
     return storage.latest_network()
 

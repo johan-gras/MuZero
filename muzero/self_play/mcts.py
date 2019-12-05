@@ -6,7 +6,7 @@ from typing import List
 
 import numpy
 
-from helpers.config import MuZeroConfig
+from config import MuZeroConfig
 from game.game import Player, Action, ActionHistory
 from networks.network import NetworkOutput, BaseNetwork
 from self_play.utils import MinMaxStats, Node, softmax_sample
@@ -56,7 +56,7 @@ def select_child(config: MuZeroConfig, node: Node, min_max_stats: MinMaxStats):
     """
     Select the child with the highest UCB score.
     """
-    # ERROR: when the parent visit count is zero, all ucb scores are zeros, therefore we return a random child
+    # When the parent visit count is zero, all ucb scores are zeros, therefore we return a random child
     if node.visit_count == 0:
         return random.sample(node.children.items(), 1)[0]
 
@@ -72,8 +72,7 @@ def ucb_score(config: MuZeroConfig, parent: Node, child: Node,
     The score for a node is based on its value, plus an exploration bonus based on
     the prior.
     """
-    pb_c = math.log((parent.visit_count + config.pb_c_base + 1) /
-                    config.pb_c_base) + config.pb_c_init
+    pb_c = math.log((parent.visit_count + config.pb_c_base + 1) / config.pb_c_base) + config.pb_c_init
     pb_c *= math.sqrt(parent.visit_count) / (child.visit_count + 1)
 
     prior_score = pb_c * child.prior
@@ -102,7 +101,6 @@ def backpropagate(search_path: List[Node], value: float, to_play: Player,
     At the end of a simulation, we propagate the evaluation all the way up the
     tree to the root.
     """
-    # ERROR: the search path need to be reversed
     for node in search_path[::-1]:
         node.value_sum += value if node.to_play == to_play else -value
         node.visit_count += 1

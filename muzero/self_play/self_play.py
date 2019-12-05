@@ -1,12 +1,12 @@
 """Self-Play module: where the games are played."""
 
-from helpers.config import MuZeroConfig
-from training.replay_buffer import ReplayBuffer
+from config import MuZeroConfig
 from game.game import AbstractGame
-from networks.network import BaseNetwork
+from networks.network import AbstractNetwork
 from networks.shared_storage import SharedStorage
 from self_play.mcts import run_mcts, select_action, expand_node, add_exploration_noise
 from self_play.utils import Node
+from training.replay_buffer import ReplayBuffer
 
 
 def run_selfplay(config: MuZeroConfig, storage: SharedStorage, replay_buffer: ReplayBuffer, train_episodes: int):
@@ -30,7 +30,7 @@ def run_eval(config: MuZeroConfig, storage: SharedStorage, eval_episodes: int):
     return sum(returns) / eval_episodes if eval_episodes else 0
 
 
-def play_game(config: MuZeroConfig, network: BaseNetwork, train: bool = True) -> AbstractGame:
+def play_game(config: MuZeroConfig, network: AbstractNetwork, train: bool = True) -> AbstractGame:
     """
     Each game is produced by starting at the initial board position, then
     repeatedly executing a Monte Carlo Tree Search to generate moves until the end

@@ -1,8 +1,8 @@
 from typing import List
 
-from game.game import Action, AbstractGame
 import gym
 
+from game.game import Action, AbstractGame
 from game.gym_wrappers import ScalingObservationWrapper
 
 
