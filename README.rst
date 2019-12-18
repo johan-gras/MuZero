@@ -73,7 +73,7 @@ Differences from the paper
 
 This implementation differ from the original paper in the following manners:
 
-- We use fully connected networks instead of convolutional architectures. This is due to the nature of our environment (Cartpole-v1) which as no spatial correlation in the observation vector.
+- We use fully connected layers instead of convolutional ones. This is due to the nature of our environment (Cartpole-v1) which as no spatial correlation in the observation vector.
 - We don't scale the hidden state between 0 and 1 using min-max normalization. Instead we use a tanh function that maps any values in a range between -1 and 1.
 - We do use a slightly simple invertible transform for the value prediction by removing the linear term.
 - During training, samples are drawn from a uniform distribution instead of using prioritized replay.
