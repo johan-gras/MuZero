@@ -110,7 +110,7 @@ def make_cartpole_config() -> MuZeroConfig:
         max_moves=1000,
         discount=0.99,
         dirichlet_alpha=0.25,
-        num_simulations=10,
+        num_simulations=11,  # Odd number perform better in eval mode
         batch_size=512,
         td_steps=10,
         visit_softmax_temperature_fn=visit_softmax_temperature,
