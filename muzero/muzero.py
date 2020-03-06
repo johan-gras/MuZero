@@ -3,9 +3,10 @@ from networks.shared_storage import SharedStorage
 from self_play.self_play import run_selfplay, run_eval
 from training.replay_buffer import ReplayBuffer
 from training.training import train_network
+import sys
 
 
-def muzero(config: MuZeroConfig):
+def muzero(config: MuZeroConfig, save_directory: str, load_directory: str):
     """
     MuZero training is split into two independent parts: Network training and
     self-play data generation.
@@ -15,7 +16,15 @@ def muzero(config: MuZeroConfig):
     In contrast to the original MuZero algorithm this version doesn't works with
     multiple threads, therefore the training and self-play is done alternately.
     """
-    storage = SharedStorage(config.new_network(), config.uniform_network(), config.new_optimizer())
+
+    if load_directory is not None:
+        # User specified directory to load network from
+        network = config.old_network(load_directory)
+    else:
+        network = config.new_network()
+
+    # TODO: figure out whether new uniform network and new optimizer are OK for loading previous model
+    storage = SharedStorage(network, config.uniform_network(), config.new_optimizer(), save_directory)
     replay_buffer = ReplayBuffer(config)
 
     for loop in range(config.nb_training_loop):
@@ -32,5 +41,12 @@ def muzero(config: MuZeroConfig):
 
 
 if __name__ == '__main__':
+    # Train the model with given config
     config = make_cartpole_config()
-    muzero(config)
+
+    save_directory = None
+    load_directory = None
+    if len(sys.argv) > 1:
+        save_directory = sys.argv[1]
+        load_directory = sys.argv[2]
+    muzero(config, save_directory, load_directory)

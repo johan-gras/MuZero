@@ -18,6 +18,7 @@ def train_network(config: MuZeroConfig, storage: SharedStorage, replay_buffer: R
         batch = replay_buffer.sample_batch(config.num_unroll_steps, config.td_steps)
         update_weights(optimizer, network, batch)
         storage.save_network(network.training_steps, network)
+    storage.save_network_to_disk(network)
 
 
 def update_weights(optimizer: tf.keras.optimizers, network: BaseNetwork, batch):

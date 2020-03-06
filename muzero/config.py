@@ -2,7 +2,6 @@ import collections
 from typing import Optional, Dict
 
 import tensorflow_core as tf
-
 from game.cartpole import CartPole
 from game.game import AbstractGame
 from networks.cartpole_network import CartPoleNetwork
@@ -83,6 +82,10 @@ class MuZeroConfig(object):
         return self.game(self.discount)
 
     def new_network(self) -> BaseNetwork:
+        return self.network(**self.network_args)
+
+    def old_network(self, directory) -> BaseNetwork:
+        self.network_args['directory'] = directory
         return self.network(**self.network_args)
 
     def uniform_network(self) -> UniformNetwork:

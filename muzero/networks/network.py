@@ -3,7 +3,8 @@ from abc import ABC, abstractmethod
 from typing import Dict, List, Callable
 
 import numpy as np
-from tensorflow_core.python.keras.models import Model
+from tensorflow_core.python.keras.models import Model, model_from_json
+from tensorflow_core.python.keras.utils.vis_utils import plot_model
 
 from game.game import Action
 
@@ -119,6 +120,40 @@ class BaseNetwork(AbstractNetwork):
                                policy_logits=NetworkOutput.build_policy_logits(policy_logits),
                                hidden_state=hidden_representation[0])
         return output
+
+    def save_network(self, directory):
+        print("Saving current network to " + directory)
+        self.save_model(self.representation_network, directory + "/representation")
+        self.save_model(self.value_network, directory + "/value")
+        self.save_model(self.policy_network, directory + "/policy")
+        self.save_model(self.dynamic_network, directory + "/dynamic")
+        self.save_model(self.reward_network, directory + "/reward")
+        plot_model(self.representation_network, to_file='representation_net.png', show_shapes=True, show_layer_names=True, expand_nested=True)
+        plot_model(self.value_network, to_file='value_net.png', show_shapes=True, show_layer_names=True, expand_nested=True)
+        plot_model(self.policy_network, to_file='policy_net.png', show_shapes=True, show_layer_names=True, expand_nested=True)
+        plot_model(self.dynamic_network, to_file='dynamic_net.png', show_shapes=True, show_layer_names=True, expand_nested=True)
+        plot_model(self.reward_network, to_file='reward_net.png', show_shapes=True, show_layer_names=True, expand_nested=True)
+
+    @staticmethod
+    def save_model(model, name):
+        # serialize model to JSON
+        model_json = model.to_json()
+        with open(name + ".json", "w") as json_file:
+            json_file.write(model_json)
+        # serialize weights to HDF5
+        model.save_weights(name + ".h5")
+
+    @staticmethod
+    def load_model(name):
+        # load json and create model
+        json_file = open(name + '.json', 'r')
+        loaded_model_json = json_file.read()
+        json_file.close()
+        loaded_model = model_from_json(loaded_model_json)
+
+        # load weights into new model
+        loaded_model.load_weights(name + ".h5")
+        return loaded_model
 
     @abstractmethod
     def _value_transform(self, value: np.array) -> float:

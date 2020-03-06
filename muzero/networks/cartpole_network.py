@@ -3,7 +3,7 @@ import math
 import numpy as np
 from tensorflow_core.python.keras import regularizers
 from tensorflow_core.python.keras.layers.core import Dense
-from tensorflow_core.python.keras.models import Sequential
+from tensorflow_core.python.keras.models import Sequential, model_from_json
 
 from game.game import Action
 from networks.network import BaseNetwork
@@ -18,24 +18,43 @@ class CartPoleNetwork(BaseNetwork):
                  max_value: int,
                  hidden_neurons: int = 64,
                  weight_decay: float = 1e-4,
-                 representation_activation: str = 'tanh'):
+                 representation_activation: str = 'tanh',
+                 directory: str = None):
         self.state_size = state_size
         self.action_size = action_size
         self.value_support_size = math.ceil(math.sqrt(max_value)) + 1
 
-        regularizer = regularizers.l2(weight_decay)
-        representation_network = Sequential([Dense(hidden_neurons, activation='relu', kernel_regularizer=regularizer),
-                                             Dense(representation_size, activation=representation_activation,
-                                                   kernel_regularizer=regularizer)])
-        value_network = Sequential([Dense(hidden_neurons, activation='relu', kernel_regularizer=regularizer),
-                                    Dense(self.value_support_size, kernel_regularizer=regularizer)])
-        policy_network = Sequential([Dense(hidden_neurons, activation='relu', kernel_regularizer=regularizer),
-                                     Dense(action_size, kernel_regularizer=regularizer)])
-        dynamic_network = Sequential([Dense(hidden_neurons, activation='relu', kernel_regularizer=regularizer),
-                                      Dense(representation_size, activation=representation_activation,
-                                            kernel_regularizer=regularizer)])
-        reward_network = Sequential([Dense(16, activation='relu', kernel_regularizer=regularizer),
-                                     Dense(1, kernel_regularizer=regularizer)])
+        if directory is not None:
+            print("Loading network from " + directory)
+            representation_network = self.load_model(directory + "/representation")
+            value_network = self.load_model(directory + "/value")
+            policy_network = self.load_model(directory + "/policy")
+            dynamic_network = self.load_model(directory + "/dynamic")
+            reward_network = self.load_model(directory + "/reward")
+        else:
+            print("Creating new network")
+            regularizer = regularizers.l2(weight_decay)
+
+            representation_network = Sequential([
+                Dense(hidden_neurons, activation='relu', kernel_regularizer=regularizer, input_shape=(None, 4)),
+                Dense(representation_size, activation=representation_activation, kernel_regularizer=regularizer)
+            ])
+            value_network = Sequential([
+                Dense(hidden_neurons, activation='relu', kernel_regularizer=regularizer, input_shape=(None, 4)),
+                Dense(self.value_support_size, kernel_regularizer=regularizer)
+            ])
+            policy_network = Sequential([
+                Dense(hidden_neurons, activation='relu', kernel_regularizer=regularizer, input_shape=(None, 4)),
+                Dense(action_size, kernel_regularizer=regularizer)
+            ])
+            dynamic_network = Sequential([
+                Dense(hidden_neurons, activation='relu', kernel_regularizer=regularizer, input_shape=(None, 6)),
+                Dense(representation_size, activation=representation_activation, kernel_regularizer=regularizer)
+            ])
+            reward_network = Sequential([
+                Dense(16, activation='relu', kernel_regularizer=regularizer, input_shape=(None, 6)),
+                Dense(1, kernel_regularizer=regularizer)
+            ])
 
         super().__init__(representation_network, value_network, policy_network, dynamic_network, reward_network)
 
