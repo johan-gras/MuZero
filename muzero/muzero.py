@@ -3,10 +3,11 @@ from networks.shared_storage import SharedStorage
 from self_play.self_play import run_selfplay, run_eval
 from training.replay_buffer import ReplayBuffer
 from training.training import train_network
+import argparse
 import sys
 
 
-def muzero(config: MuZeroConfig, save_directory: str, load_directory: str):
+def muzero(config: MuZeroConfig, save_directory: str, load_directory: str, test: bool, visual: bool):
     """
     MuZero training is split into two independent parts: Network training and
     self-play data generation.
@@ -27,13 +28,19 @@ def muzero(config: MuZeroConfig, save_directory: str, load_directory: str):
     storage = SharedStorage(network, config.uniform_network(), config.new_optimizer(), save_directory)
     replay_buffer = ReplayBuffer(config)
 
+    if test:
+        print("Eval score:", run_eval(config, storage, 5, visual=visual))
+        print(f"MuZero played {5} "
+              f"episodes.\n")
+        return storage.latest_network()
+
     for loop in range(config.nb_training_loop):
         print("Training loop", loop)
         score_train = run_selfplay(config, storage, replay_buffer, config.nb_episodes)
         train_network(config, storage, replay_buffer, config.nb_epochs)
 
         print("Train score:", score_train)
-        print("Eval score:", run_eval(config, storage, 50))
+        print("Eval score:", run_eval(config, storage, 50, visual=visual))
         print(f"MuZero played {config.nb_episodes * (loop + 1)} "
               f"episodes and trained for {config.nb_epochs * (loop + 1)} epochs.\n")
 
@@ -41,12 +48,22 @@ def muzero(config: MuZeroConfig, save_directory: str, load_directory: str):
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Run MuZero')
+    parser.add_argument('-l', '--load',
+                        type=str,
+                        help='directory to load network from')
+    parser.add_argument('-s', '--save',
+                        type=str,
+                        help='directory to save network to')
+    parser.add_argument('-t', '--test',
+                        action='store_true',
+                        help='only run the specified network, do not train')
+    parser.add_argument('-v', '--visual',
+                        action='store_true',
+                        help="display the network's evaluation for user")
+    args = parser.parse_args()
+    print(args)
     # Train the model with given config
     config = make_cartpole_config()
 
-    save_directory = None
-    load_directory = None
-    if len(sys.argv) > 1:
-        save_directory = sys.argv[1]
-        load_directory = sys.argv[2]
-    muzero(config, save_directory, load_directory)
+    muzero(config, args.save, args.load, args.test, args.visual)

@@ -7,6 +7,8 @@ from networks.shared_storage import SharedStorage
 from self_play.mcts import run_mcts, select_action, expand_node, add_exploration_noise
 from self_play.utils import Node
 from training.replay_buffer import ReplayBuffer
+import matplotlib.pyplot as plt
+import time
 
 
 def run_selfplay(config: MuZeroConfig, storage: SharedStorage, replay_buffer: ReplayBuffer, train_episodes: int):
@@ -20,17 +22,17 @@ def run_selfplay(config: MuZeroConfig, storage: SharedStorage, replay_buffer: Re
     return sum(returns) / train_episodes
 
 
-def run_eval(config: MuZeroConfig, storage: SharedStorage, eval_episodes: int):
+def run_eval(config: MuZeroConfig, storage: SharedStorage, eval_episodes: int, visual: bool = False):
     """Evaluate MuZero without noise added to the prior of the root and without softmax action selection"""
     network = storage.latest_network()
     returns = []
     for _ in range(eval_episodes):
-        game = play_game(config, network, train=False)
+        game = play_game(config, network, train=False, visual=visual)
         returns.append(sum(game.rewards))
     return sum(returns) / eval_episodes if eval_episodes else 0
 
 
-def play_game(config: MuZeroConfig, network: AbstractNetwork, train: bool = True) -> AbstractGame:
+def play_game(config: MuZeroConfig, network: AbstractNetwork, train: bool = True, visual: bool = False) -> AbstractGame:
     """
     Each game is produced by starting at the initial board position, then
     repeatedly executing a Monte Carlo Tree Search to generate moves until the end
@@ -54,4 +56,13 @@ def play_game(config: MuZeroConfig, network: AbstractNetwork, train: bool = True
         action = select_action(config, len(game.history), root, network, mode=mode_action_select)
         game.apply(action)
         game.store_search_statistics(root)
+        if visual:
+            game.env.render()
+    if game.terminal():
+        print('Fell lower than 15 degrees')
+    else:
+        print('Exceeded max moves')
+    if visual:
+        game.env.close()
+
     return game
