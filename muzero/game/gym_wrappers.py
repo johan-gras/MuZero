@@ -1,5 +1,6 @@
 import gym
 import numpy as np
+import cv2
 
 
 class ScalingObservationWrapper(gym.ObservationWrapper):
@@ -19,3 +20,20 @@ class ScalingObservationWrapper(gym.ObservationWrapper):
 
     def observation(self, observation):
         return (observation - self.mean) / self.max
+
+
+class DownSampleVisualObservationWrapper(gym.ObservationWrapper):
+    """
+    Wrapper that significantly down-samples the gym image for more efficient network training
+    """
+
+    def __init__(self, env, factor=0):
+        super().__init__(env)
+        super().__init__(env)
+        assert isinstance(env.observation_space, gym.spaces.Box)
+        self.factor = factor
+
+    def observation(self, observation):
+        # TODO: Implement down-sampling effectively
+        # Default size is (250, 160, 3)
+        return cv2.resize(observation, dsize=(int(250/self.factor), int(80/self.factor)), interpolation=cv2.INTER_CUBIC)

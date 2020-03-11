@@ -60,7 +60,7 @@ def play_game(config: MuZeroConfig, network: AbstractNetwork, train: bool = True
             game.env.render()
     if visual:
         if game.terminal():
-            print('Fell lower than 15 degrees')
+            print('Model lost game')
         else:
             print('Exceeded max moves')
         game.env.close()
