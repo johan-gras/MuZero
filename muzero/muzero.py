@@ -25,13 +25,12 @@ def muzero(config: MuZeroConfig, save_directory: str, load_directory: str, test:
     else:
         network = config.new_network()
 
-    # TODO: figure out whether new uniform network and new optimizer are OK for loading previous model
-    storage = SharedStorage(network, config.uniform_network(), config.new_optimizer(), save_directory)
+    storage = SharedStorage(network, config.uniform_network(), config.new_optimizer(), save_directory, load_directory != None)
     replay_buffer = ReplayBuffer(config)
 
     if test:
-        print("Eval score:", run_eval(config, storage, 50, visual=visual))
-        print(f"MuZero played {50} "
+        print("Eval score:", run_eval(config, storage, 5, visual=visual))
+        print(f"MuZero played {5} "
               f"episodes.\n")
         return storage.latest_network()
 
@@ -55,7 +54,6 @@ def handler(signal_received, frame):
 
 if __name__ == '__main__':
     signal(SIGINT, handler)
-
 
     parser = argparse.ArgumentParser(description='Run MuZero')
     parser.add_argument('-l', '--load',
