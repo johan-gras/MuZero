@@ -4,7 +4,8 @@ from self_play.self_play import run_selfplay, run_eval
 from training.replay_buffer import ReplayBuffer
 from training.training import train_network
 import argparse
-import sys
+from signal import signal, SIGINT
+from sys import exit
 
 
 def muzero(config: MuZeroConfig, save_directory: str, load_directory: str, test: bool, visual: bool):
@@ -47,7 +48,15 @@ def muzero(config: MuZeroConfig, save_directory: str, load_directory: str, test:
     return storage.latest_network()
 
 
+def handler(signal_received, frame):
+    print('\nUser terminated program. Goodbye!')
+    exit(0)
+
+
 if __name__ == '__main__':
+    signal(SIGINT, handler)
+
+
     parser = argparse.ArgumentParser(description='Run MuZero')
     parser.add_argument('-l', '--load',
                         type=str,
