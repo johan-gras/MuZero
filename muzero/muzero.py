@@ -29,8 +29,8 @@ def muzero(config: MuZeroConfig, save_directory: str, load_directory: str, test:
     replay_buffer = ReplayBuffer(config)
 
     if test:
-        print("Eval score:", run_eval(config, storage, 5, visual=visual))
-        print(f"MuZero played {5} "
+        print("Eval score:", run_eval(config, storage, 50, visual=visual))
+        print(f"MuZero played {50} "
               f"episodes.\n")
         return storage.latest_network()
 
@@ -62,7 +62,7 @@ if __name__ == '__main__':
                         action='store_true',
                         help="display the network's evaluation for user")
     args = parser.parse_args()
-    print(args)
+
     # Train the model with given config
     config = make_cartpole_config()
 

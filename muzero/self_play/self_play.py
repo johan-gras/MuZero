@@ -58,11 +58,11 @@ def play_game(config: MuZeroConfig, network: AbstractNetwork, train: bool = True
         game.store_search_statistics(root)
         if visual:
             game.env.render()
-    if game.terminal():
-        print('Fell lower than 15 degrees')
-    else:
-        print('Exceeded max moves')
     if visual:
+        if game.terminal():
+            print('Fell lower than 15 degrees')
+        else:
+            print('Exceeded max moves')
         game.env.close()
 
     return game

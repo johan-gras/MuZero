@@ -123,7 +123,7 @@ class BaseNetwork(AbstractNetwork):
 
     def save_network(self, directory):
         if directory is None:
-            pass
+            return
         print("Saving current network to " + directory)
         self.save_model(self.representation_network, directory + "/representation")
         self.save_model(self.value_network, directory + "/value")
