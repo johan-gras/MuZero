@@ -1,5 +1,5 @@
 
-#MuZero
+# MuZero
 
 This repository is a Python implementation of the MuZero algorithm.
 It is based upon the [pre-print paper](https://arxiv.org/abs/1911.08265) and the 
@@ -17,7 +17,7 @@ If you wish to train Muzero on other kinds of environments, this codebase can be
 - The code quality and documentation are quite lacking, and much of the code might still feel "in-progress".
 - The training and testing pipeline is not very advanced.
 
-###Dependencies
+### Dependencies
 
 We run this code using:
 
@@ -59,7 +59,7 @@ you need to manually install it:
 
 `sudo apt-get install graphviz`
 
-###Training your MuZero
+### Training your MuZero
 
 This code must be run from the main function in ``muzero.py`` (don't forget to first configure your conda environment).
 
