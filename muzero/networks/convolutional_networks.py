@@ -27,7 +27,7 @@ def skip_block(feat_maps_in, feat_maps_out, prev):
     return prev
 
 
-def Residual(feat_maps_in, feat_maps_out, prev_layer):
+def residual(feat_maps_in, feat_maps_out, prev_layer):
     '''
     A customizable residual unit with convolutional and shortcut blocks
     Args:
@@ -43,22 +43,24 @@ def Residual(feat_maps_in, feat_maps_out, prev_layer):
     return merged
 
 
-# TODO: does RGB come before or after?
-shape = (96, 96, 128)
-input = Input(shape)
-c1 = Conv2D(filters=128, kernel_size=(3, 3), strides=(2, 2), padding='same', activation='relu', input_shape=shape)(input)
-r1 = Residual(128, 128, c1)
-r2 = Residual(128, 128, r1)
-c2 = Conv2D(filters=256, kernel_size=(3, 3), strides=(2, 2), padding='same', activation='relu', input_shape=(48, 48, 128))(r2)
-r3 = Residual(256, 256, c2)
-r4 = Residual(256, 256, r3)
-r5 = Residual(256, 256, r4)
-a1 = AveragePooling2D(strides=2)(r5)
-r6 = Residual(256, 256, a1)
-r7 = Residual(256, 256, r6)
-r8 = Residual(256, 256, r7)
-a2 = AveragePooling2D(strides=2)(r8)
-model = Model(inputs=input, outputs=a2)
-model.summary()
-plot_model(model, './conv.png')
+def build_representation_network():
+    # TODO: does RGB come before or after?
+    shape = (96, 96, 128)
+    input = Input(shape)
+    c1 = Conv2D(filters=128, kernel_size=(3, 3), strides=(2, 2), padding='same', activation='relu', input_shape=shape)(input)
+    r1 = residual(128, 128, c1)
+    r2 = residual(128, 128, r1)
+    c2 = Conv2D(filters=256, kernel_size=(3, 3), strides=(2, 2), padding='same', activation='relu', input_shape=(48, 48, 128))(r2)
+    r3 = residual(256, 256, c2)
+    r4 = residual(256, 256, r3)
+    r5 = residual(256, 256, r4)
+    a1 = AveragePooling2D(strides=2)(r5)
+    r6 = residual(256, 256, a1)
+    r7 = residual(256, 256, r6)
+    r8 = residual(256, 256, r7)
+    a2 = AveragePooling2D(strides=2)(r8)
+    model = Model(inputs=input, outputs=a2)
+    # model.summary()
+    # plot_model(model, './conv.png')
+    return model
 
