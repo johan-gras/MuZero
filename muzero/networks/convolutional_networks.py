@@ -43,6 +43,10 @@ def residual(feat_maps_in, feat_maps_out, prev_layer):
     return merged
 
 
+def build_dynamics_network():
+    pass
+
+
 def build_representation_network():
     # TODO: does RGB come before or after?
     shape = (96, 96, 128)
@@ -63,4 +67,3 @@ def build_representation_network():
     # model.summary()
     # plot_model(model, './conv.png')
     return model
-
