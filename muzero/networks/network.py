@@ -61,6 +61,8 @@ class InitialModel(Model):
     def call(self, image):
         image = tf.cast(image, tf.float32)
         hidden_representation = self.representation_network(image)
+        # batch, 3, 2, 6 w scale factor of 5 (centipede)
+        # batch, 4 (cartpole)
         value = self.value_network(hidden_representation)
         policy_logits = self.policy_network(hidden_representation)
         return hidden_representation, value, policy_logits
