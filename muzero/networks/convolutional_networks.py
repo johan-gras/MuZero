@@ -3,7 +3,6 @@ from tensorflow_core.python.keras.layers import BatchNormalization, Convolution2
 from tensorflow_core.python.keras.layers import Conv2D, AveragePooling2D
 from tensorflow_core.python.keras.layers.core import Activation, Layer
 from tensorflow_core.python.keras.layers import Add
-from tensorflow_core.python.keras.utils import plot_model
 
 
 '''
