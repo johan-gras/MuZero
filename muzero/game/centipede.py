@@ -12,7 +12,7 @@ class Centipede(AbstractGame):
     def __init__(self, discount: float):
         super().__init__(discount)
         self.env = gym.make('Centipede-v0')
-        self.env = DownSampleVisualObservationWrapper(self.env, factor=2)
+        self.env = DownSampleVisualObservationWrapper(self.env, factor=5)
         self.actions = list(map(lambda i: Action(i), range(self.env.action_space.n)))
         self.observations = [self.env.reset()]
         self.done = False
