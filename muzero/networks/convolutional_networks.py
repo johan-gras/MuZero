@@ -80,7 +80,7 @@ def build_value_network(shape, regularizer):
     return value_model
 
 
-def build_representation_network(img_row, img_col, filter_size1=3, filter_size2=6, conv_strides=2, avg_pool_strides=2):
+def build_representation_network(img_row, img_col, filter_size1=3, filter_size2=6, conv_strides=1, avg_pool_strides=2):
     # TODO: does RGB come before or after?
     shape = (img_row, img_col, 3)
     input = Input(shape)

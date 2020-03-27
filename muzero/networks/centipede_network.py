@@ -40,8 +40,8 @@ class CentipedeNetwork(BaseNetwork):
 
             representation_network = build_representation_network(50, 32)
 
-            # Shape of representation network's output
-            hidden_rep_shape = (3, 2, 6)
+            # Ignore batch size when setting network inputs
+            hidden_rep_shape = representation_network.output_shape[1:]
             value_network = build_value_network(hidden_rep_shape, regularizer=regularizer)
             policy_network = build_policy_network(hidden_rep_shape, regularizer, self.action_size)
 
