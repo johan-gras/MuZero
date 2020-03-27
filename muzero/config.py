@@ -140,7 +140,7 @@ def make_centipede_config() -> MuZeroConfig:
         max_moves=1000,
         discount=0.99,
         dirichlet_alpha=0.25,
-        num_simulations=3,  # Odd number perform better in eval mode
+        num_simulations=11,  # Odd number perform better in eval mode
         batch_size=24,
         td_steps=10,
         visit_softmax_temperature_fn=visit_softmax_temperature,

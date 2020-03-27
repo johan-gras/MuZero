@@ -1,19 +1,18 @@
 from tensorflow_core.python.keras import Model
-from tensorflow_core.python.keras.layers import BatchNormalization, Convolution2D, Input
-from tensorflow_core.python.keras.layers import Conv2D, AveragePooling2D
-from tensorflow_core.python.keras.layers.core import Activation, Layer
-from tensorflow_core.python.keras.layers import Add
+from tensorflow_core.python.keras.layers import AveragePooling2D, Add, BatchNormalization, Conv2D, Dense, Flatten, Input, LeakyReLU
+from tensorflow_core.python.keras.layers.core import Activation
 
 
 '''
 Residual unit modified and updated to account for being keras 2.0 from https://github.com/relh/keras-residual-unit
 '''
 
+
 def conv_block(feat_maps_out, prev):
-    prev = BatchNormalization(axis=-1)(prev) # Specifying the axis and mode allows for later merging
+    prev = BatchNormalization(axis=-1)(prev)  # Specifying the axis and mode allows for later merging
     prev = Activation('relu')(prev)
     prev = Conv2D(filters=feat_maps_out, kernel_size=3, padding='same')(prev)
-    prev = BatchNormalization(axis=-1)(prev) # Specifying the axis and mode allows for later merging
+    prev = BatchNormalization(axis=-1)(prev)  # Specifying the axis and mode allows for later merging
     prev = Activation('relu')(prev)
     prev = Conv2D(filters=feat_maps_out, kernel_size=3, padding='same')(prev)
     return prev
@@ -42,8 +41,32 @@ def residual(feat_maps_in, feat_maps_out, prev_layer):
     return merged
 
 
-def build_dynamics_network():
+def build_dynamic_network(regularizer):
     pass
+
+
+def build_policy_network(shape, regularizer):
+    policy_input = Input(shape)
+    c1 = Conv2D(filters=1, kernel_size=1, padding='same', activation='linear')(policy_input)
+    b1 = BatchNormalization(axis=-1)(c1)
+    l1 = LeakyReLU()(b1)
+    f1 = Flatten()(l1)
+    d1 = Dense(64, use_bias=False, activation='linear')(f1)
+    policy_model = Model(inputs=policy_input, outputs=d1)
+    return policy_model
+
+
+def build_value_network(shape, regularizer):
+    value_input = Input(shape)
+    c1 = Conv2D(filters=1, kernel_size=1, padding='same', activation='linear')(value_input)
+    b1 = BatchNormalization(axis=-1)(c1)
+    l1 = LeakyReLU()(b1)
+    f1 = Flatten()(l1)
+    d2 = Dense(20, use_bias=False, activation='linear')(f1)
+    l2 = LeakyReLU()(d2)
+    d2 = Dense(1, use_bias=False, activation='tanh')(l2)
+    value_model = Model(inputs=value_input, outputs=d2)
+    return value_model
 
 
 def build_representation_network(img_row, img_col):
