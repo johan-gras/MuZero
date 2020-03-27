@@ -1,7 +1,7 @@
 import math
 
 import numpy as np
-from .convolutional_networks import build_representation_network
+from .convolutional_networks import build_dynamic_network, build_policy_network, build_representation_network, build_value_network
 from tensorflow_core.python.keras import regularizers
 from tensorflow_core.python.keras.layers.core import Dense
 from tensorflow_core.python.keras.models import Sequential, model_from_json
@@ -37,20 +37,12 @@ class CentipedeNetwork(BaseNetwork):
             regularizer = regularizers.l2(weight_decay)
 
             # TODO: determine and set input sizes so model can be saved
-            representation_network = build_representation_network(50, 32)
 
-            value_network = Sequential([
-                Dense(hidden_neurons, activation='relu', kernel_regularizer=regularizer),
-                Dense(self.value_support_size, kernel_regularizer=regularizer)
-            ])
-            policy_network = Sequential([
-                Dense(hidden_neurons, activation='relu', kernel_regularizer=regularizer),
-                Dense(action_size, kernel_regularizer=regularizer)
-            ])
-            dynamic_network = Sequential([
-                Dense(hidden_neurons, activation='relu', kernel_regularizer=regularizer),
-                Dense(representation_size, activation=representation_activation, kernel_regularizer=regularizer)
-            ])
+            input_shape = (3, 2, 6)
+            representation_network = build_representation_network(50, 32)
+            value_network = build_value_network(input_shape, regularizer=regularizer)
+            policy_network = build_policy_network(input_shape, regularizer=regularizer)
+            dynamic_network = build_dynamic_network(regularizer=regularizer)
             reward_network = Sequential([
                 Dense(16, activation='relu', kernel_regularizer=regularizer),
                 Dense(1, kernel_regularizer=regularizer)
