@@ -41,17 +41,28 @@ def residual(feat_maps_in, feat_maps_out, prev_layer):
     return merged
 
 
-def build_dynamic_network(regularizer):
-    pass
+def build_dynamic_network(shape, regularizer):
+    return None
 
 
-def build_policy_network(shape, regularizer):
+def build_reward_network(shape, regularizer):
+    """
+    network = Sequential([
+        Dense(16, activation='relu', kernel_regularizer=regularizer),
+        Dense(1, kernel_regularizer=regularizer)
+    ])
+    return reward_network
+    """
+    return None
+
+
+def build_policy_network(shape, regularizer, action_size):
     policy_input = Input(shape)
     c1 = Conv2D(filters=1, kernel_size=1, padding='same', activation='linear')(policy_input)
     b1 = BatchNormalization(axis=-1)(c1)
     l1 = LeakyReLU()(b1)
     f1 = Flatten()(l1)
-    d1 = Dense(64, use_bias=False, activation='linear')(f1)
+    d1 = Dense(action_size, use_bias=False, activation='linear')(f1)
     policy_model = Model(inputs=policy_input, outputs=d1)
     return policy_model
 
@@ -69,23 +80,30 @@ def build_value_network(shape, regularizer):
     return value_model
 
 
-def build_representation_network(img_row, img_col):
+def build_representation_network(img_row, img_col, filter_size1=3, filter_size2=6, conv_strides=2, avg_pool_strides=2):
     # TODO: does RGB come before or after?
     shape = (img_row, img_col, 3)
     input = Input(shape)
-    c1 = Conv2D(filters=3, kernel_size=3, strides=2, padding='same', activation='relu', input_shape=shape)(input)
-    r1 = residual(3, 3, c1)
-    r2 = residual(3, 3, r1)
-    c2 = Conv2D(filters=6, kernel_size=3, strides=2, padding='same', activation='relu', input_shape=(img_row/2, img_col/2, 3))(r2)
-    r3 = residual(6, 6, c2)
-    r4 = residual(6, 6, r3)
-    r5 = residual(6, 6, r4)
-    a1 = AveragePooling2D(strides=2)(r5)
-    r6 = residual(6, 6, a1)
-    r7 = residual(6, 6, r6)
-    r8 = residual(6, 6, r7)
-    a2 = AveragePooling2D(strides=2)(r8)
+    c1 = Conv2D(filters=filter_size1, kernel_size=3, strides=conv_strides, padding='same', activation='relu',
+                input_shape=shape)(input)
+
+    r1 = residual(filter_size1, filter_size1, c1)
+    r2 = residual(filter_size1, filter_size1, r1)
+
+    c2 = Conv2D(filters=filter_size2, kernel_size=3, strides=conv_strides, padding='same', activation='relu',
+                input_shape=(img_row/conv_strides, img_col/conv_strides, 3))(r2)
+
+    r3 = residual(filter_size2, filter_size2, c2)
+    r4 = residual(filter_size2, filter_size2, r3)
+    r5 = residual(filter_size2, filter_size2, r4)
+
+    a1 = AveragePooling2D(strides=avg_pool_strides)(r5)
+
+    r6 = residual(filter_size2, filter_size2, a1)
+    r7 = residual(filter_size2, filter_size2, r6)
+    r8 = residual(filter_size2, filter_size2, r7)
+
+    a2 = AveragePooling2D(strides=avg_pool_strides)(r8)
+
     model = Model(inputs=input, outputs=a2)
-    # model.summary()
-    # plot_model(model, './conv.png')
     return model

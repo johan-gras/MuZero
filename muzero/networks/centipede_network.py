@@ -1,7 +1,7 @@
 import math
 
 import numpy as np
-from .convolutional_networks import build_dynamic_network, build_policy_network, build_representation_network, build_value_network
+from .convolutional_networks import *
 from tensorflow_core.python.keras import regularizers
 from tensorflow_core.python.keras.layers.core import Dense
 from tensorflow_core.python.keras.models import Sequential, model_from_json
@@ -38,15 +38,17 @@ class CentipedeNetwork(BaseNetwork):
 
             # TODO: determine and set input sizes so model can be saved
 
-            input_shape = (3, 2, 6)
             representation_network = build_representation_network(50, 32)
-            value_network = build_value_network(input_shape, regularizer=regularizer)
-            policy_network = build_policy_network(input_shape, regularizer=regularizer)
-            dynamic_network = build_dynamic_network(regularizer=regularizer)
-            reward_network = Sequential([
-                Dense(16, activation='relu', kernel_regularizer=regularizer),
-                Dense(1, kernel_regularizer=regularizer)
-            ])
+
+            # Shape of representation network's output
+            hidden_rep_shape = (3, 2, 6)
+            value_network = build_value_network(hidden_rep_shape, regularizer=regularizer)
+            policy_network = build_policy_network(hidden_rep_shape, regularizer, self.action_size)
+
+            # Shape when actions are stacked on top of hidden rep
+            stacked_hidden_rep_shape = (hidden_rep_shape[0], hidden_rep_shape[1], hidden_rep_shape[2] + 1)
+            dynamic_network = build_dynamic_network(stacked_hidden_rep_shape, regularizer=regularizer)
+            reward_network = build_reward_network(stacked_hidden_rep_shape, regularizer)
 
         super().__init__(representation_network, value_network, policy_network, dynamic_network, reward_network)
 
