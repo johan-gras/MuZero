@@ -1,8 +1,8 @@
 """Training module: this is where MuZero neurons are trained."""
 
 import numpy as np
-import tensorflow_core as tf
-from tensorflow_core.python.keras.losses import MSE
+import tensorflow as tf
+from tensorflow.keras.losses import MSE
 
 from config import MuZeroConfig
 from networks.network import BaseNetwork

@@ -1,7 +1,7 @@
 import collections
 from typing import Optional, Dict
 
-import tensorflow_core as tf
+import tensorflow as tf
 
 from game.cartpole import CartPole
 from game.game import AbstractGame
