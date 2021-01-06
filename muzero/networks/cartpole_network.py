@@ -1,9 +1,9 @@
 import math
 
 import numpy as np
-from tensorflow_core.python.keras import regularizers
-from tensorflow_core.python.keras.layers.core import Dense
-from tensorflow_core.python.keras.models import Sequential
+from tensorflow.keras import regularizers
+from tensorflow.keras.layers import Dense
+from tensorflow.keras.models import Sequential
 
 from game.game import Action
 from networks.network import BaseNetwork

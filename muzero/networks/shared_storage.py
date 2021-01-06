@@ -1,4 +1,4 @@
-import tensorflow_core as tf
+import tensorflow as tf
 
 from networks.network import BaseNetwork, UniformNetwork, AbstractNetwork
 

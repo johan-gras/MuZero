@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from typing import Dict, List, Callable
 
 import numpy as np
-from tensorflow_core.python.keras.models import Model
+from tensorflow.keras.models import Model
 
 from game.game import Action
 
