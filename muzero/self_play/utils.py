@@ -53,7 +53,7 @@ class Node(object):
 
 
 def softmax_sample(visit_counts, actions, t):
-    counts_exp = np.exp(visit_counts) ** (1 / t)
+    counts_exp = np.exp(visit_counts / t)
     probs = counts_exp / np.sum(counts_exp, axis=0)
     action_idx = np.random.choice(len(actions), p=probs)
     return actions[action_idx]
